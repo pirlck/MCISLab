@@ -1,28 +1,28 @@
-/*************************************************************************
-    > File Name: README
-    > Author: HeJie
-    > Mail: sa614415@mail.ustc.edu.cn
-    > Created Time: 2015年01月03日 星期五 01时01分39秒
- ************************************************************************/
+//
+//
+//
+//
+软件涉及到的技术：		  
+client（多线程）; server（epoll+线程池）
 
-Server：EPOLL + 线程池
-Client：多线程
-
-架构：		  
-Client（多线程） ----------> Server（EPOLL+线程池）
-
-1.支持多客户同时上传文件，每个文件由多个线程负责传送
-2.Server可以调节Thread pool大小
-3.每个Client和Server都建立单独的信息交换socket，独立于数据块传送socket，用于交换控制信息，直到文件传输结束
-4.Server支持多种类型，有独立的Server Type字段，用于表示Client传送数据类型（Server以此为判断提供不同服务），可以扩展Server的功能，提供文件服务以外的服务
-5.线程池封装好的，直接可以include头文件，提供三个接口
-6.文件读写使用mmap(), 减少内核态和用户态的切换，加快文件读写速度
+1.支持多客户同时上传文件
+2.server可以设置Thread pool的大小
+3.每个client和server都建立单独的信息交换socket套接字，独立于数据块传送socket套接字，
+  用于交换控制信息，直到文件传输结束
+4.server支持多种类型，有独立的Type字段，用于表示client传送数据类型（Server以此为判断提供不同服务），
+  可以扩展Server的功能，提供文件服务以外的服务
+5.线程池封装好了，直接include头文件就可以使用
+6.文件读写使用mmap(), 减少内核态和用户态的切换，加快文件传送速度
 
 文件说明：
 server/:
-    tpopl.h、tpool.c：封装的池，预留线程池创建、添加任务、销毁接口
+    thread_popl.h、thread_pool.c：封装的池，预留线程池create_pool、add_task、destroy_pool等接口
     work.h、work.c：包含线程可以执行的任务，支持添加更多的任务
-    server.c：Server代码，响应client，添加任务
+    server.c：受理客户端的连接请求，接收文件
     
 client/:
     与Server代码类似
+
+后续考虑加入的功能：
+1:加入心跳机制，把超时的客户端连接断掉
+2:负载均衡机制
