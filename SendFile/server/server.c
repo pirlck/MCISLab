@@ -1,11 +1,60 @@
 //
+// a program to test send file in local network
+// server: recv info send by client and recv file data
 //
-// file recv the big file
 //
-#include <stdio.h>
+#include "work.h"
+#include "tpool.h"
 
-int main()
+int main(int argc, char **argv)
 {
-	printf("server is to recv the big file! \n");
-	return 0;
+    printf("--------- Server --------------\n");
+    int port = PORT;
+    if (argc>1)
+        port = atoi(argv[1]);
+
+    //create thread pool
+    if (tpool_create(THREAD_NUM) != 0) {
+        printf("tpool_create failed\n");
+        exit(-1);
+    }
+    printf("--- Thread Pool Strat ---\n");
+
+    //initial server
+    int listenfd = Server_init(port);
+    socklen_t sockaddr_len = sizeof(struct sockaddr);
+
+    //epoll
+    static struct epoll_event ev, events[EPOLL_SIZE];
+	int epfd = epoll_create(EPOLL_SIZE);
+	ev.events = EPOLLIN;
+	ev.data.fd = listenfd;
+	epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev);
+
+    while(1){
+        int events_count = epoll_wait(epfd, events, EPOLL_SIZE, -1);
+        int i=0;
+
+        //accept resquest
+        for(; i<events_count; i++){
+            if(events[i].data.fd == listenfd)
+            {
+                int connfd;
+                struct sockaddr_in  clientaddr;
+                while( ( connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &sockaddr_len) ) > 0 )
+				{
+				    printf("EPOLL: Received New Connection Request---connfd= %d\n",connfd);
+					struct args *p_args = (struct args *)malloc(sizeof(struct args));
+                    p_args->fd = connfd;
+                    p_args->recv_finfo = recv_fileinfo;
+                    p_args->recv_fdata = recv_filedata;
+
+                    //add task to the work list
+                    tpool_add_work(worker, (void*)p_args);
+				}
+            }
+        }
+    }
+
+    return 0;
 }
